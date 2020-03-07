@@ -1,0 +1,13 @@
+[package]
+name = "roolz"
+description = "A rules engine"
+license = "Apache-2.0"
+license-file = "LICENSE"
+documentation = "https://github.com/lavignes/roolz"
+homepage = "https://github.com/lavignes/roolz"
+repository = "https://github.com/lavignes/roolz"
+version = "0.1.0"
+authors = ["lavignes <scott.h.lavigne@gmail.com>"]
+edition = "2018"
+
+[dependencies]
