@@ -2,7 +2,6 @@
 name = "roolz"
 description = "A rules engine"
 license = "Apache-2.0"
-license-file = "LICENSE"
 documentation = "https://github.com/lavignes/roolz"
 homepage = "https://github.com/lavignes/roolz"
 repository = "https://github.com/lavignes/roolz"
