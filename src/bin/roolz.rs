@@ -28,11 +28,15 @@ struct Opts {
     address: SocketAddr,
 
     /// todo
-    #[clap(short = "p", long = "package", required = true)]
-    packages: Vec<PathBuf>,
+    #[clap(short = "r", long = "rules", required = true)]
+    rules: Vec<PathBuf>,
+
+    /// todo
+    #[clap(short = "f", long = "facts", required = true)]
+    facts: Vec<PathBuf>,
 }
 
-async fn watch_packages<S: Future<Output = ()>>(
+async fn watch_files<S: Future<Output = ()>>(
     paths: Vec<PathBuf>,
     sig_handler: S,
 ) -> Result<(), Box<dyn Error>> {
@@ -94,7 +98,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     tokio::try_join!(
         start_server(opts.address, sig_handler.clone()),
-        watch_packages(opts.packages, sig_handler),
+        watch_files(opts.rules, sig_handler.clone()),
+        watch_files(opts.facts, sig_handler),
     )?;
 
     Ok(())
