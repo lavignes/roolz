@@ -10,6 +10,9 @@ authors = ["lavignes <scott.h.lavigne@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+log = "0.4.8"
+simple_logger = "1.6.0"
+
 async-ctrlc = "1.0"
 async-stream = "0.2"
 
@@ -24,6 +27,8 @@ tokio = { version = "0.2", features = ["macros", "sync", "stream"] }
 notify = "4.0"
 
 clap = { git = "https://github.com/clap-rs/clap" }
+
+uuid = { version = "0.8.1", features = ["v4"] }
 
 [build-dependencies]
 glob = "0.3"

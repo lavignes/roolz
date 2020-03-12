@@ -15,17 +15,38 @@ use futures_core::{Future, Stream};
 use notify::{self, DebouncedEvent, RecursiveMode, Watcher};
 use tokio::{stream::StreamExt, sync::mpsc};
 use tonic::{transport::Server, Request, Response, Status, Streaming};
+use uuid::Uuid;
 
 use roolz::api::v1alpha::service::{
     RulesService, RulesServiceServer, SessionRequest, SessionResponse,
 };
 
-/// roolz
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
+    let opts = Opts::parse();
+    simple_logger::init_with_level(opts.log_level).expect("Failed to initialize logger");
+
+    let sig_handler = CtrlC::new().expect("Cannot create signal handler").shared();
+
+    tokio::try_join!(
+        start_server(opts.address, sig_handler.clone()),
+        watch_files(opts.rules, sig_handler.clone()),
+        watch_files(opts.facts, sig_handler),
+    )?;
+
+    Ok(())
+}
+
+/// An distributed rules engine
 #[derive(Clap)]
 #[clap(version = "0.1.0")]
 struct Opts {
     /// todo
     address: SocketAddr,
+
+    /// todo
+    #[clap(short = "l", long = "log-level", default_value = "info")]
+    log_level: log::Level,
 
     /// todo
     #[clap(short = "r", long = "rules", required = true)]
@@ -40,6 +61,12 @@ async fn watch_files<S: Future<Output = ()>>(
     paths: Vec<PathBuf>,
     sig_handler: S,
 ) -> Result<(), Box<dyn Error>> {
+    let watcher_id = Uuid::new_v4();
+    log::info!(
+        "Starting file watcher ({}) for {} paths...",
+        watcher_id,
+        paths.len()
+    );
     let join_handle: Cell<Option<JoinHandle<()>>> = Cell::new(None);
     // Race with the sig_handler
     let result = tokio::select! {
@@ -54,20 +81,34 @@ async fn watch_files<S: Future<Output = ()>>(
             }
 
             let (tx, mut rx) = mpsc::unbounded_channel();
-            join_handle.set(Some(thread::spawn(move || loop {
+            let builder = thread::Builder::new()
+                .name(watcher_id.to_string());
+            join_handle.set(Some(builder.spawn(move || loop {
                 if let Err(_) = tx.send(sync_rx.recv()) {
                     // Channel closed
                     break;
                 }
-            })));
+            }).expect("Failed to spawn thread")));
 
-            while let Some(event) = rx.recv().await {
-                println!("{:?}", event);
+            while let Some(result) = rx.recv().await {
+                match result? {
+                    DebouncedEvent::Write(path) => {
+                        log::debug!("File updated: {:?}", path);
+                    }
+                    DebouncedEvent::Remove(path) => {
+                        log::debug!("File removed: {:?}", path);
+                    }
+                    DebouncedEvent::Rename(old, new) => {
+                        log::debug!("File moved: {:?} to {:?}", old, new);
+                    }
+                    _ => {}
+                }
             }
 
             Ok(())
         } => result
     };
+    log::info!("File watcher ({}) terminating...", watcher_id);
     // Thread will exit when async channel closes
     if let Some(join_handle) = join_handle.take() {
         join_handle.join().expect("Thread panicked");
@@ -81,26 +122,12 @@ async fn start_server<S: Future<Output = ()>>(
 ) -> Result<(), Box<dyn Error>> {
     let service = RulesServiceServer::new(RulesServiceState {});
 
-    println!("Starting server on {}...", addr);
+    log::info!("Starting server on {}...", addr);
     Server::builder()
         .add_service(service)
         .serve_with_shutdown(addr, sig_handler)
         .await?;
-    println!("Shutting down server...");
-
-    Ok(())
-}
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
-    let sig_handler = CtrlC::new().expect("Cannot create signal handler").shared();
-    let opts = Opts::parse();
-
-    tokio::try_join!(
-        start_server(opts.address, sig_handler.clone()),
-        watch_files(opts.rules, sig_handler.clone()),
-        watch_files(opts.facts, sig_handler),
-    )?;
+    log::info!("Shutting down server...");
 
     Ok(())
 }
@@ -121,7 +148,7 @@ impl RulesService for RulesServiceState {
 
         let handler = async_stream::try_stream! {
             while let Some(req) = stream.next().await {
-                println!("{:?}", req);
+                log::debug!("{:?}", req);
                 yield SessionResponse::default();
             }
         };
