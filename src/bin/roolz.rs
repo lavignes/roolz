@@ -1,30 +1,23 @@
 use std::{
-    pin::Pin,
+    cell::Cell,
     error::Error,
     net::SocketAddr,
-    time::Duration,
     path::PathBuf,
-    cell::Cell,
+    pin::Pin,
     thread::{self, JoinHandle},
+    time::Duration,
 };
 
-use futures::future::FutureExt;
-use futures_core::{Future, Stream};
-use tonic::{
-    Request, Response, Status, Streaming,
-    transport::Server,
-};
-use tokio::{
-    sync::mpsc,
-    stream::StreamExt,
-};
 use async_ctrlc::CtrlC;
 use clap::Clap;
-use notify::{self, Watcher, RecursiveMode, DebouncedEvent};
+use futures::future::FutureExt;
+use futures_core::{Future, Stream};
+use notify::{self, DebouncedEvent, RecursiveMode, Watcher};
+use tokio::{stream::StreamExt, sync::mpsc};
+use tonic::{transport::Server, Request, Response, Status, Streaming};
 
 use roolz::api::v1alpha::service::{
-    RulesService, RulesServiceServer,
-    SessionRequest, SessionResponse,
+    RulesService, RulesServiceServer, SessionRequest, SessionResponse,
 };
 
 /// roolz
@@ -39,7 +32,10 @@ struct Opts {
     packages: Vec<PathBuf>,
 }
 
-async fn watch_packages<S: Future<Output=()>>(paths: Vec<PathBuf>, sig_handler: S) -> Result<(), Box<dyn Error>>{
+async fn watch_packages<S: Future<Output = ()>>(
+    paths: Vec<PathBuf>,
+    sig_handler: S,
+) -> Result<(), Box<dyn Error>> {
     let join_handle: Cell<Option<JoinHandle<()>>> = Cell::new(None);
     // Race with the sig_handler
     let result = tokio::select! {
@@ -75,13 +71,17 @@ async fn watch_packages<S: Future<Output=()>>(paths: Vec<PathBuf>, sig_handler: 
     result
 }
 
-async fn start_server<S: Future<Output=()>>(addr: SocketAddr, sig_handler: S) -> Result<(), Box<dyn Error>> {
+async fn start_server<S: Future<Output = ()>>(
+    addr: SocketAddr,
+    sig_handler: S,
+) -> Result<(), Box<dyn Error>> {
     let service = RulesServiceServer::new(RulesServiceState {});
 
     println!("Starting server on {}...", addr);
     Server::builder()
         .add_service(service)
-        .serve_with_shutdown(addr, sig_handler).await?;
+        .serve_with_shutdown(addr, sig_handler)
+        .await?;
     println!("Shutting down server...");
 
     Ok(())
@@ -105,9 +105,13 @@ struct RulesServiceState;
 
 #[tonic::async_trait]
 impl RulesService for RulesServiceState {
-    type SessionStream = Pin<Box<dyn Stream<Item = Result<SessionResponse, Status>> + Send + Sync + 'static>>;
+    type SessionStream =
+        Pin<Box<dyn Stream<Item = Result<SessionResponse, Status>> + Send + Sync + 'static>>;
 
-    async fn session(&self, request: Request<Streaming<SessionRequest>>) -> Result<Response<Self::SessionStream>, Status> {
+    async fn session(
+        &self,
+        request: Request<Streaming<SessionRequest>>,
+    ) -> Result<Response<Self::SessionStream>, Status> {
         let mut stream = request.into_inner();
 
         let handler = async_stream::try_stream! {

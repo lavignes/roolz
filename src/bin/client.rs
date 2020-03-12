@@ -1,12 +1,9 @@
 use std::error::Error;
 
-use tonic::Request;
 use tokio::sync::mpsc;
+use tonic::Request;
 
-use roolz::api::v1alpha::service::{
-    RulesServiceClient,
-    SessionRequest,
-};
+use roolz::api::v1alpha::service::{RulesServiceClient, SessionRequest};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -30,4 +27,3 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
-
