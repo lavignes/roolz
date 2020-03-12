@@ -37,7 +37,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-/// An distributed rules engine
+/// A distributed rules engine
 #[derive(Clap)]
 #[clap(version = "0.1.0")]
 struct Opts {
