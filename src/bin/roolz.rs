@@ -149,7 +149,12 @@ impl RulesService for RulesServiceState {
         let handler = async_stream::try_stream! {
             while let Some(req) = stream.next().await {
                 log::debug!("{:?}", req);
-                yield SessionResponse::default();
+                let nonce = Uuid::new_v4().to_string();
+
+                yield SessionResponse {
+                    nonce,
+                    ..SessionResponse::default()
+                }
             }
         };
 
