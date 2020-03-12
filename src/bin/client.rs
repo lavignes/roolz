@@ -7,7 +7,7 @@ use roolz::api::v1alpha::service::{RulesServiceClient, SessionRequest};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let mut client = RulesServiceClient::connect("http://127.0.0.1:1234").await?;
+    let mut client = RulesServiceClient::connect("http://0.0.0.0:43434").await?;
 
     let (tx, mut rx) = mpsc::unbounded_channel();
     let handler = async_stream::stream! {

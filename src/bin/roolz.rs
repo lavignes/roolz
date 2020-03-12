@@ -41,18 +41,19 @@ async fn main() -> Result<(), Box<dyn Error>> {
 #[derive(Clap)]
 #[clap(version = "0.1.0")]
 struct Opts {
-    /// todo
+    /// Address to listen for traffic on
+    #[clap(default_value = "0.0.0.0:43434")]
     address: SocketAddr,
 
-    /// todo
+    /// One of: error, warn, info, debug, or trace
     #[clap(short = "l", long = "log-level", default_value = "info")]
     log_level: log::Level,
 
-    /// todo
+    /// Path to load rules files (may be repeated)
     #[clap(short = "r", long = "rules", required = true)]
     rules: Vec<PathBuf>,
 
-    /// todo
+    /// Path to facts files (may be repeated)
     #[clap(short = "f", long = "facts", required = true)]
     facts: Vec<PathBuf>,
 }
