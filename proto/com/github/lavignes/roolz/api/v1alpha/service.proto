@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package com.github.lavignes.roolz.api.v1alpha.service;
+
+option java_multiple_files = true;
+option java_package = "com.github.lavignes.roolz.api.v1alpha.service";
+option java_outer_classname = "Service";
+
+service RulesService {
+    rpc Session(stream SessionRequest) returns (stream SessionResponse) {}
+}
+
+message SetContext {
+
+}
+
+message SessionRequest {
+    string nonce = 1;
+
+    oneof command {
+        SetContext set_context = 2;
+    }
+}
+
+message SessionResponse {
+    string nonce = 1;
+}

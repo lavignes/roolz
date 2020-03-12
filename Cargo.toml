@@ -10,3 +10,21 @@ authors = ["lavignes <scott.h.lavigne@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+async-ctrlc = "1.0"
+async-stream = "0.2"
+
+tonic = "0.1"
+prost = "0.6"
+
+futures = "0.3"
+futures-core = "0.3"
+futures-util = "0.3"
+tokio = { version = "0.2", features = ["macros", "sync", "stream"] }
+
+notify = "4.0"
+
+clap = { git = "https://github.com/clap-rs/clap" }
+
+[build-dependencies]
+glob = "0.3"
+tonic-build = "0.1"
