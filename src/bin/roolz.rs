@@ -12,7 +12,9 @@ use async_ctrlc::CtrlC;
 use clap::Clap;
 use futures::future::FutureExt;
 use futures_core::{Future, Stream};
+use log::LevelFilter;
 use notify::{self, DebouncedEvent, RecursiveMode, Watcher};
+use simple_logger::SimpleLogger;
 use tokio::{stream::StreamExt, sync::mpsc};
 use tonic::{transport::Server, Request, Response, Status, Streaming};
 use uuid::Uuid;
@@ -24,7 +26,10 @@ use roolz::api::v1alpha::service::{
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let opts = Opts::parse();
-    simple_logger::init_with_level(opts.log_level).expect("Failed to initialize logger");
+    SimpleLogger::new()
+        .with_level(opts.log_level)
+        .init()
+        .expect("Failed to initialize logger");
 
     let sig_handler = CtrlC::new().expect("Cannot create signal handler").shared();
 
@@ -46,15 +51,15 @@ struct Opts {
     address: SocketAddr,
 
     /// One of: error, warn, info, debug, or trace
-    #[clap(short = "l", long = "log-level", default_value = "info")]
-    log_level: log::Level,
+    #[clap(short = 'l', long = "log-level", default_value = "info")]
+    log_level: LevelFilter,
 
     /// Path to load rules files (may be repeated)
-    #[clap(short = "r", long = "rules", required = true)]
+    #[clap(short = 'r', long = "rules", required = true)]
     rules: Vec<PathBuf>,
 
     /// Path to facts files (may be repeated)
-    #[clap(short = "f", long = "facts", required = true)]
+    #[clap(short = 'f', long = "facts", required = true)]
     facts: Vec<PathBuf>,
 }
 
